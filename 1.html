@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: #222;
+            background: #115c2b; /* 진한 초록색 */
             color: #fff;
             margin: 0;
             padding: 0;
@@ -86,17 +86,33 @@
             <div class="score" id="dealer-score"></div>
         </div>
         <hr>
-        <div>
-            <strong>플레이어 카드</strong>
-            <div class="cards" id="player-cards"></div>
-            <div class="score" id="player-score"></div>
-        </div>
-        <div class="actions">
-            <button id="hit">히트</button>
-            <button id="stand">스탠드</button>
-            <button id="restart">다시하기</button>
+        <!-- 3명의 플레이어 영역 추가 -->
+        <div id="players-area">
+            <div>
+                <strong>플레이어 1 카드</strong>
+                <div class="cards" id="player1-cards"></div>
+                <div class="score" id="player1-score"></div>
+                <div class="actions" id="player1-actions"></div>
+            </div>
+            <hr>
+            <div>
+                <strong>플레이어 2 카드</strong>
+                <div class="cards" id="player2-cards"></div>
+                <div class="score" id="player2-score"></div>
+                <div class="actions" id="player2-actions"></div>
+            </div>
+            <hr>
+            <div>
+                <strong>플레이어 3 카드</strong>
+                <div class="cards" id="player3-cards"></div>
+                <div class="score" id="player3-score"></div>
+                <div class="actions" id="player3-actions"></div>
+            </div>
         </div>
         <div class="result" id="result"></div>
+        <div style="margin-top:16px;">
+            <button id="restart">다시하기</button>
+        </div>
     </div>
     <script>
         // 카드 덱 생성
@@ -117,36 +133,68 @@
                 [deck[i], deck[j]] = [deck[j], deck[i]];
             }
         }
-        function cardValue(card) {
-            if (card.value === 'A') return 11;
-            if (['K', 'Q', 'J'].includes(card.value)) return 10;
-            return parseInt(card.value);
-        }
-        function calculateScore(cards) {
-            let score = 0;
-            let aces = 0;
-            for (let card of cards) {
-                score += cardValue(card);
-                if (card.value === 'A') aces++;
-            }
-            while (score > 21 && aces > 0) {
-                score -= 10;
-                aces--;
-            }
-            return score;
-        }
-        // 게임 상태
-        let deck, playerCards, dealerCards, gameOver, playerStand;
+        // 3명의 플레이어 지원
+        let deck, dealerCards, players, currentPlayer, gameOver;
+
         function startGame() {
             deck = createDeck();
             shuffle(deck);
-            playerCards = [deck.pop(), deck.pop()];
             dealerCards = [deck.pop(), deck.pop()];
+            players = [
+                {cards: [deck.pop(), deck.pop()], stand: false, bust: false, blackjack: false, aceChoice: []},
+                {cards: [deck.pop(), deck.pop()], stand: false, bust: false, blackjack: false, aceChoice: []},
+                {cards: [deck.pop(), deck.pop()], stand: false, bust: false, blackjack: false, aceChoice: []}
+            ];
+            currentPlayer = 0;
             gameOver = false;
-            playerStand = false;
-            updateUI();
             document.getElementById('result').textContent = '';
+            updateUI();
         }
+
+        // A(에이스) 선택 UI 생성
+        function showAceChoice(playerIdx, cardIdx) {
+            const actionsDiv = document.getElementById(`player${playerIdx+1}-actions`);
+            actionsDiv.innerHTML = '';
+            const btn1 = document.createElement('button');
+            btn1.textContent = 'A를 1로';
+            btn1.onclick = () => {
+                players[playerIdx].aceChoice[cardIdx] = 1;
+                updateUI();
+            };
+            const btn11 = document.createElement('button');
+            btn11.textContent = 'A를 11로';
+            btn11.onclick = () => {
+                players[playerIdx].aceChoice[cardIdx] = 11;
+                updateUI();
+            };
+            actionsDiv.appendChild(btn1);
+            actionsDiv.appendChild(btn11);
+        }
+
+        // 카드 값 계산 (A 선택 반영)
+        function cardValue(card, aceChoice) {
+            if (card.value === 'A') {
+                return aceChoice ? aceChoice : 11;
+            }
+            if (['K', 'Q', 'J'].includes(card.value)) return 10;
+            return parseInt(card.value);
+        }
+        function calculateScore(cards, aceChoices) {
+            let score = 0;
+            let aces = 0;
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                if (card.value === 'A') {
+                    score += cardValue(card, aceChoices[i]);
+                    aces++;
+                } else {
+                    score += cardValue(card);
+                }
+            }
+            // 기존 자동 A 처리 제거 (직접 선택)
+            return score;
+        }
+
         function updateUI() {
             // 딜러 카드 표시
             const dealerCardsDiv = document.getElementById('dealer-cards');
@@ -154,7 +202,7 @@
             dealerCards.forEach((card, idx) => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card';
-                if (!gameOver && idx === 0 && !playerStand) {
+                if (!gameOver && idx === 0 && players.some(p=>!p.stand && !p.bust)) {
                     cardDiv.textContent = '🂠'; // 첫 카드 숨김
                 } else {
                     cardDiv.textContent = card.value + card.suit;
@@ -163,78 +211,129 @@
             });
             // 딜러 점수 표시
             const dealerScoreDiv = document.getElementById('dealer-score');
-            if (!gameOver && !playerStand) {
+            if (!gameOver && players.some(p=>!p.stand && !p.bust)) {
                 dealerScoreDiv.textContent = '점수: ?';
             } else {
-                dealerScoreDiv.textContent = '점수: ' + calculateScore(dealerCards);
+                dealerScoreDiv.textContent = '점수: ' + calculateScore(dealerCards, []);
             }
-            // 플레이어 카드 표시
-            const playerCardsDiv = document.getElementById('player-cards');
-            playerCardsDiv.innerHTML = '';
-            playerCards.forEach(card => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
-                cardDiv.textContent = card.value + card.suit;
-                playerCardsDiv.appendChild(cardDiv);
-            });
-            // 플레이어 점수 표시
-            document.getElementById('player-score').textContent = '점수: ' + calculateScore(playerCards);
+            // 각 플레이어 UI
+            for (let i = 0; i < 3; i++) {
+                const player = players[i];
+                const playerCardsDiv = document.getElementById(`player${i+1}-cards`);
+                playerCardsDiv.innerHTML = '';
+                player.cards.forEach((card, idx) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'card';
+                    cardDiv.textContent = card.value + card.suit;
+                    playerCardsDiv.appendChild(cardDiv);
+                });
+                // 점수 표시
+                document.getElementById(`player${i+1}-score`).textContent =
+                    '점수: ' + calculateScore(player.cards, player.aceChoice);
+
+                // 액션 버튼
+                const actionsDiv = document.getElementById(`player${i+1}-actions`);
+                actionsDiv.innerHTML = '';
+                if (gameOver || player.stand || player.bust) continue;
+                if (currentPlayer === i) {
+                    // A 선택이 필요한 카드가 있으면 선택 UI
+                    let aceIdx = player.cards.findIndex((c, idx) => c.value === 'A' && player.aceChoice[idx] == null);
+                    if (aceIdx !== -1) {
+                        showAceChoice(i, aceIdx);
+                    } else {
+                        // 히트/스탠드 버튼
+                        const hitBtn = document.createElement('button');
+                        hitBtn.textContent = '히트';
+                        hitBtn.onclick = function() {
+                            player.cards.push(deck.pop());
+                            player.aceChoice.push(undefined);
+                            updateUI();
+                            checkGameEnd();
+                        };
+                        const standBtn = document.createElement('button');
+                        standBtn.textContent = '스탠드';
+                        standBtn.onclick = function() {
+                            player.stand = true;
+                            nextPlayer();
+                        };
+                        actionsDiv.appendChild(hitBtn);
+                        actionsDiv.appendChild(standBtn);
+                    }
+                }
+            }
         }
+
         function checkGameEnd() {
-            const playerScore = calculateScore(playerCards);
-            if (playerScore > 21) {
-                endGame('플레이어가 버스트! 딜러 승리');
-                return true;
+            const player = players[currentPlayer];
+            const score = calculateScore(player.cards, player.aceChoice);
+            if (score > 21) {
+                player.bust = true;
+                player.stand = true;
+                nextPlayer();
+                return;
             }
-            if (playerScore === 21 && playerCards.length === 2) {
-                endGame('블랙잭! 플레이어 승리');
-                return true;
+            if (score === 21 && player.cards.length === 2) {
+                player.blackjack = true;
+                player.stand = true;
+                nextPlayer();
+                return;
             }
-            return false;
-        }
-        function dealerTurn() {
-            playerStand = true;
             updateUI();
-            let dealerScore = calculateScore(dealerCards);
+        }
+
+        function nextPlayer() {
+            // 다음 플레이어로 이동
+            currentPlayer++;
+            if (currentPlayer >= players.length) {
+                dealerTurn();
+            } else {
+                updateUI();
+            }
+        }
+
+        function dealerTurn() {
+            // 모든 플레이어가 끝나면 딜러 턴
+            let dealerScore = calculateScore(dealerCards, []);
             while (dealerScore < 17) {
                 dealerCards.push(deck.pop());
-                dealerScore = calculateScore(dealerCards);
+                dealerScore = calculateScore(dealerCards, []);
             }
-            updateUI();
-            setTimeout(() => {
-                const playerScore = calculateScore(playerCards);
-                dealerScore = calculateScore(dealerCards);
-                let result = '';
-                if (dealerScore > 21) {
-                    result = '딜러 버스트! 플레이어 승리';
-                } else if (dealerScore === playerScore) {
-                    result = '무승부';
-                } else if (playerScore > dealerScore) {
-                    result = '플레이어 승리!';
-                } else {
-                    result = '딜러 승리!';
-                }
-                endGame(result);
-            }, 800);
-        }
-        function endGame(resultText) {
             gameOver = true;
             updateUI();
+            setTimeout(() => {
+                showResult();
+            }, 800);
+        }
+
+        function showResult() {
+            const dealerScore = calculateScore(dealerCards, []);
+            let resultText = '';
+            for (let i = 0; i < 3; i++) {
+                const player = players[i];
+                const score = calculateScore(player.cards, player.aceChoice);
+                let result = '';
+                if (player.bust) {
+                    result = `플레이어 ${i+1}: 버스트! 딜러 승리`;
+                } else if (player.blackjack) {
+                    result = `플레이어 ${i+1}: 블랙잭! 승리`;
+                } else if (dealerScore > 21) {
+                    result = `플레이어 ${i+1}: 딜러 버스트! 승리`;
+                } else if (score > dealerScore) {
+                    result = `플레이어 ${i+1}: 승리!`;
+                } else if (score === dealerScore) {
+                    result = `플레이어 ${i+1}: 무승부`;
+                } else {
+                    result = `플레이어 ${i+1}: 딜러 승리`;
+                }
+                resultText += result + '\n';
+            }
             document.getElementById('result').textContent = resultText;
         }
-        document.getElementById('hit').onclick = function() {
-            if (gameOver || playerStand) return;
-            playerCards.push(deck.pop());
-            updateUI();
-            checkGameEnd();
-        };
-        document.getElementById('stand').onclick = function() {
-            if (gameOver || playerStand) return;
-            dealerTurn();
-        };
+
         document.getElementById('restart').onclick = function() {
             startGame();
         };
+
         // 최초 시작
         startGame();
     </script>
