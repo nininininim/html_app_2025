@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>블랙잭 게임</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #222;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            margin-top: 40px;
+            font-size: 2.5em;
+            color: #ffd700;
+        }
+        .game-area {
+            background: #333;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px #0008;
+            padding: 32px 24px;
+            margin-top: 32px;
+            min-width: 340px;
+            max-width: 400px;
+        }
+        .cards {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .card {
+            background: #fff;
+            color: #222;
+            border-radius: 8px;
+            width: 48px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            box-shadow: 0 2px 8px #0004;
+        }
+        .score {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+        }
+        .actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        button {
+            background: #ffd700;
+            color: #222;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 24px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:active {
+            background: #e6c200;
+        }
+        .result {
+            font-size: 1.2em;
+            margin-top: 18px;
+            color: #ff5252;
+        }
+    </style>
+</head>
+<body>
+    <h1>블랙잭 게임</h1>
+    <div class="game-area">
+        <div>
+            <strong>딜러 카드</strong>
+            <div class="cards" id="dealer-cards"></div>
+            <div class="score" id="dealer-score"></div>
+        </div>
+        <hr>
+        <div>
+            <strong>플레이어 카드</strong>
+            <div class="cards" id="player-cards"></div>
+            <div class="score" id="player-score"></div>
+        </div>
+        <div class="actions">
+            <button id="hit">히트</button>
+            <button id="stand">스탠드</button>
+            <button id="restart">다시하기</button>
+        </div>
+        <div class="result" id="result"></div>
+    </div>
+    <script>
+        // 카드 덱 생성
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        function createDeck() {
+            const deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({suit, value});
+                }
+            }
+            return deck;
+        }
+        function shuffle(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        function cardValue(card) {
+            if (card.value === 'A') return 11;
+            if (['K', 'Q', 'J'].includes(card.value)) return 10;
+            return parseInt(card.value);
+        }
+        function calculateScore(cards) {
+            let score = 0;
+            let aces = 0;
+            for (let card of cards) {
+                score += cardValue(card);
+                if (card.value === 'A') aces++;
+            }
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+            return score;
+        }
+        // 게임 상태
+        let deck, playerCards, dealerCards, gameOver, playerStand;
+        function startGame() {
+            deck = createDeck();
+            shuffle(deck);
+            playerCards = [deck.pop(), deck.pop()];
+            dealerCards = [deck.pop(), deck.pop()];
+            gameOver = false;
+            playerStand = false;
+            updateUI();
+            document.getElementById('result').textContent = '';
+        }
+        function updateUI() {
+            // 딜러 카드 표시
+            const dealerCardsDiv = document.getElementById('dealer-cards');
+            dealerCardsDiv.innerHTML = '';
+            dealerCards.forEach((card, idx) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                if (!gameOver && idx === 0 && !playerStand) {
+                    cardDiv.textContent = '🂠'; // 첫 카드 숨김
+                } else {
+                    cardDiv.textContent = card.value + card.suit;
+                }
+                dealerCardsDiv.appendChild(cardDiv);
+            });
+            // 딜러 점수 표시
+            const dealerScoreDiv = document.getElementById('dealer-score');
+            if (!gameOver && !playerStand) {
+                dealerScoreDiv.textContent = '점수: ?';
+            } else {
+                dealerScoreDiv.textContent = '점수: ' + calculateScore(dealerCards);
+            }
+            // 플레이어 카드 표시
+            const playerCardsDiv = document.getElementById('player-cards');
+            playerCardsDiv.innerHTML = '';
+            playerCards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.textContent = card.value + card.suit;
+                playerCardsDiv.appendChild(cardDiv);
+            });
+            // 플레이어 점수 표시
+            document.getElementById('player-score').textContent = '점수: ' + calculateScore(playerCards);
+        }
+        function checkGameEnd() {
+            const playerScore = calculateScore(playerCards);
+            if (playerScore > 21) {
+                endGame('플레이어가 버스트! 딜러 승리');
+                return true;
+            }
+            if (playerScore === 21 && playerCards.length === 2) {
+                endGame('블랙잭! 플레이어 승리');
+                return true;
+            }
+            return false;
+        }
+        function dealerTurn() {
+            playerStand = true;
+            updateUI();
+            let dealerScore = calculateScore(dealerCards);
+            while (dealerScore < 17) {
+                dealerCards.push(deck.pop());
+                dealerScore = calculateScore(dealerCards);
+            }
+            updateUI();
+            setTimeout(() => {
+                const playerScore = calculateScore(playerCards);
+                dealerScore = calculateScore(dealerCards);
+                let result = '';
+                if (dealerScore > 21) {
+                    result = '딜러 버스트! 플레이어 승리';
+                } else if (dealerScore === playerScore) {
+                    result = '무승부';
+                } else if (playerScore > dealerScore) {
+                    result = '플레이어 승리!';
+                } else {
+                    result = '딜러 승리!';
+                }
+                endGame(result);
+            }, 800);
+        }
+        function endGame(resultText) {
+            gameOver = true;
+            updateUI();
+            document.getElementById('result').textContent = resultText;
+        }
+        document.getElementById('hit').onclick = function() {
+            if (gameOver || playerStand) return;
+            playerCards.push(deck.pop());
+            updateUI();
+            checkGameEnd();
+        };
+        document.getElementById('stand').onclick = function() {
+            if (gameOver || playerStand) return;
+            dealerTurn();
+        };
+        document.getElementById('restart').onclick = function() {
+            startGame();
+        };
+        // 최초 시작
+        startGame();
+    </script>
+</body>
+</html>
