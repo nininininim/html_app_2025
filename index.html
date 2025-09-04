@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>행운의 룰렛</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Arial, sans-serif;
+			background: #f7f7f7;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+		}
+		h1 {
+			margin-bottom: 24px;
+			color: #333;
+		}
+		.roulette-container {
+			width: 360px;
+			height: 120px;
+			background: #fff;
+			border-radius: 18px;
+			box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+			display: flex;
+			align-items: center;
+			justify-content: space-around;
+			margin-bottom: 32px;
+			border: 2px solid #e0e0e0;
+		}
+		.roulette-cell {
+			width: 80px;
+			height: 80px;
+			background: #f0f4ff;
+			border-radius: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 2.5rem;
+			color: #2d5be3;
+			box-shadow: 0 2px 8px rgba(45,91,227,0.08);
+			transition: background 0.2s, color 0.2s;
+		}
+		.spin-btn {
+			padding: 12px 36px;
+			font-size: 1.2rem;
+			background: linear-gradient(90deg, #2d5be3 60%, #6bc1ff 100%);
+			color: #fff;
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			box-shadow: 0 2px 8px rgba(45,91,227,0.12);
+			transition: background 0.2s;
+		}
+		.spin-btn:hover {
+			background: linear-gradient(90deg, #1a3e8a 60%, #6bc1ff 100%);
+		}
+	</style>
+</head>
+<body>
+	<h1>행운의 룰렛</h1>
+	<div class="roulette-container">
+		<div class="roulette-cell" id="cell1">?</div>
+		<div class="roulette-cell" id="cell2">?</div>
+		<div class="roulette-cell" id="cell3">?</div>
+	</div>
+	<button class="spin-btn" onclick="spinRoulette()">룰렛 돌리기</button>
+	<script>
+		function getRandomInt(min, max) {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		function spinRoulette() {
+			for (let i = 1; i <= 3; i++) {
+				const num = getRandomInt(1, 9);
+				document.getElementById('cell' + i).textContent = num;
+			}
+		}
+	</script>
+</body>
+</html>
