@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<title>7초 타이머 도전</title>
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		body {
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+			font-family: 'Segoe UI', Arial, sans-serif;
+		}
+		.container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			background: rgba(255,255,255,0.13);
+			border-radius: 18px;
+			box-shadow: 0 4px 24px #0002;
+			padding: 48px 36px 40px 36px;
+		}
+		.timer {
+			font-size: 3.2em;
+			font-weight: bold;
+			color: #222;
+			margin-bottom: 32px;
+			letter-spacing: 2px;
+			text-shadow: 0 2px 8px #fff6;
+		}
+		.result {
+			font-size: 1.5em;
+			font-weight: bold;
+			margin-top: 28px;
+			color: #e53935;
+			min-height: 2em;
+		}
+		.stop-btn {
+			background: linear-gradient(90deg, #2193b0 0%, #6dd5ed 100%);
+			color: #fff;
+			border: none;
+			border-radius: 8px;
+			padding: 16px 48px;
+			font-size: 1.2em;
+			font-weight: bold;
+			cursor: pointer;
+			box-shadow: 0 2px 8px #0002;
+			transition: background 0.2s, transform 0.1s;
+		}
+		.stop-btn:active {
+			background: linear-gradient(90deg, #6dd5ed 0%, #2193b0 100%);
+			transform: scale(0.97);
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="timer" id="timer">0.00</div>
+		<button class="stop-btn" id="stopBtn">멈추기</button>
+		<div class="result" id="result"></div>
+	</div>
+	<script>
+		let startTime = null;
+		let timerInterval = null;
+		let stopped = false;
+
+		function pad(num, len) {
+			return num.toString().padStart(len, '0');
+		}
+
+		function startTimer() {
+			startTime = performance.now();
+			stopped = false;
+			document.getElementById('result').textContent = '';
+			timerInterval = setInterval(() => {
+				if (stopped) return;
+				const now = performance.now();
+				let elapsed = (now - startTime) / 1000;
+				if (elapsed >= 10) {
+					elapsed = 10;
+					clearInterval(timerInterval);
+					document.getElementById('timer').textContent = '10.00';
+					document.getElementById('result').textContent = '시간초과';
+					document.getElementById('stopBtn').disabled = true;
+					return;
+				}
+				const sec = Math.floor(elapsed);
+				const ms = Math.floor((elapsed - sec) * 100);
+				document.getElementById('timer').textContent = `${sec}.${pad(ms,2)}`;
+			}, 10);
+		}
+
+		document.getElementById('stopBtn').onclick = function() {
+			if (stopped) return;
+			stopped = true;
+			clearInterval(timerInterval);
+			const now = performance.now();
+			let elapsed = (now - startTime) / 1000;
+			if (elapsed > 10) elapsed = 10;
+			const sec = Math.floor(elapsed);
+			const ms = Math.floor((elapsed - sec) * 100);
+			document.getElementById('timer').textContent = `${sec}.${pad(ms,2)}`;
+			document.getElementById('stopBtn').disabled = true;
+			if (sec === 7 && ms === 0) {
+				document.getElementById('result').textContent = '성공!';
+				document.getElementById('result').style.color = '#388e3c';
+			} else {
+				document.getElementById('result').textContent = '실패';
+				document.getElementById('result').style.color = '#e53935';
+			}
+		};
+
+		// 타이머 시작
+		window.onload = function() {
+			document.getElementById('stopBtn').disabled = false;
+			startTimer();
+		};
+	</script>
+</body>
+</html>
