@@ -21,10 +21,10 @@
 			display: flex;
 			flex-direction: column;
 			align-items: center;
+			justify-content: center;
+			width: 100vw;
+			height: 100vh;
 			background: rgba(255,255,255,0.13);
-			border-radius: 18px;
-			box-shadow: 0 4px 24px #0002;
-			padding: 48px 36px 40px 36px;
 		}
 		.timer {
 			font-size: 3.2em;
@@ -63,6 +63,7 @@
 	<div class="container">
 		<div class="timer" id="timer">0.00</div>
 		<button class="stop-btn" id="stopBtn">멈추기</button>
+		<button class="stop-btn" id="retryBtn" style="margin-top:12px; background:linear-gradient(90deg,#43e97b 0%,#38f9d7 100%);">다시하기</button>
 		<div class="result" id="result"></div>
 	</div>
 	<script>
@@ -78,6 +79,8 @@
 			startTime = performance.now();
 			stopped = false;
 			document.getElementById('result').textContent = '';
+			document.getElementById('result').style.color = '#e53935';
+			document.getElementById('stopBtn').disabled = false;
 			timerInterval = setInterval(() => {
 				if (stopped) return;
 				const now = performance.now();
@@ -114,6 +117,14 @@
 				document.getElementById('result').textContent = '실패';
 				document.getElementById('result').style.color = '#e53935';
 			}
+		};
+
+		document.getElementById('retryBtn').onclick = function() {
+			clearInterval(timerInterval);
+			document.getElementById('timer').textContent = '0.00';
+			document.getElementById('result').textContent = '';
+			document.getElementById('stopBtn').disabled = false;
+			startTimer();
 		};
 
 		// 타이머 시작
