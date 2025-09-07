@@ -116,115 +116,153 @@
 			if (sec === 7 && ms === 0) {
 				document.getElementById('result').textContent = '성공!';
 				document.getElementById('result').style.color = '#388e3c';
-				startConfetti();
+				startFireworks();
 			} else {
 				document.getElementById('result').textContent = '실패';
 				document.getElementById('result').style.color = '#e53935';
 			}
 		}
 
-		// 종이띠(컨페티) 효과 구현
+		// 폭죽(파이어웍스) 효과 구현
 		const confettiCanvas = document.getElementById('confetti');
-		const confettiCtx = confettiCanvas.getContext('2d');
-		let confettiPieces = [];
-		let confettiAnimFrame = null;
-		let confettiEndTimeout = null;
+		const ctx = confettiCanvas.getContext('2d');
+		let fireworks = [];
+		let particles = [];
+		let fireworksAnimFrame = null;
+		let fireworksEndTimeout = null;
 
-		function resizeConfettiCanvas() {
+		function resizeFireworksCanvas() {
 			confettiCanvas.width = window.innerWidth;
 			confettiCanvas.height = window.innerHeight;
 		}
-		window.addEventListener('resize', resizeConfettiCanvas);
+		window.addEventListener('resize', resizeFireworksCanvas);
 
 		function randomBetween(a, b) {
 			return a + Math.random() * (b - a);
 		}
 
-		function createConfettiPiece() {
-			const colors = [
-				'#2196f3', '#e53935', '#43a047', '#ffd600', '#ff6f00', '#8e24aa', '#00bcd4', '#ff4081', '#fff', '#00e676'
-			];
+		function launchFirework() {
 			const w = confettiCanvas.width;
 			const h = confettiCanvas.height;
-			return {
-				x: randomBetween(0, w),
-				y: randomBetween(-h * 0.2, -20),
-				width: randomBetween(8, 18),
-				height: randomBetween(14, 28),
-				color: colors[Math.floor(Math.random() * colors.length)],
-				angle: randomBetween(0, 2 * Math.PI),
-				angularSpeed: randomBetween(-0.03, 0.03),
-				speed: randomBetween(2.5, 6),
-				vy: randomBetween(2.5, 6),
-				vx: randomBetween(-2, 2),
-				gravity: randomBetween(0.08, 0.16),
-				opacity: randomBetween(0.7, 1),
-				tilt: randomBetween(-0.5, 0.5)
-			};
+			const x = randomBetween(w * 0.2, w * 0.8);
+			const y = randomBetween(h * 0.15, h * 0.45);
+			const color = `hsl(${Math.floor(Math.random()*360)},90%,60%)`;
+			fireworks.push({
+				x: x,
+				y: h,
+				tx: x,
+				ty: y,
+				color: color,
+				state: 'ascend',
+				vy: randomBetween(-13, -17),
+				vx: randomBetween(-1, 1),
+				particles: []
+			});
 		}
 
-		function launchConfetti() {
-			const count = 120 + Math.floor(Math.random() * 60); // 한 번에 훨씬 더 많이
+		function createParticles(firework) {
+			const count = 48 + Math.floor(Math.random() * 32);
 			for (let i = 0; i < count; i++) {
-				confettiPieces.push(createConfettiPiece());
+				const angle = (Math.PI * 2) * (i / count);
+				const speed = randomBetween(2, 7);
+				particles.push({
+					x: firework.tx,
+					y: firework.ty,
+					vx: Math.cos(angle) * speed + randomBetween(-1,1),
+					vy: Math.sin(angle) * speed + randomBetween(-1,1),
+					gravity: 0.08,
+					opacity: 1,
+					color: firework.color,
+					radius: randomBetween(2, 4)
+				});
 			}
 		}
 
-		function drawConfetti() {
-			confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-			for (let c of confettiPieces) {
-				confettiCtx.save();
-				confettiCtx.globalAlpha = c.opacity;
-				confettiCtx.translate(c.x, c.y);
-				confettiCtx.rotate(c.angle);
-				confettiCtx.fillStyle = c.color;
-				confettiCtx.fillRect(-c.width/2, -c.height/2, c.width, c.height);
-				confettiCtx.restore();
+		function updateFireworks() {
+			const h = confettiCanvas.height;
+			for (let fw of fireworks) {
+				if (fw.state === 'ascend') {
+					fw.x += fw.vx;
+					fw.y += fw.vy;
+					fw.vy += 0.18;
+					if (fw.y <= fw.ty) {
+						fw.state = 'explode';
+						createParticles(fw);
+					}
+				}
+			}
+			fireworks = fireworks.filter(fw => fw.state !== 'explode');
+		}
+
+		function updateParticles() {
+			for (let p of particles) {
+				p.x += p.vx;
+				p.y += p.vy;
+				p.vy += p.gravity;
+				p.opacity *= 0.97;
+			}
+			particles = particles.filter(p => p.opacity > 0.05 && p.y < confettiCanvas.height + 40);
+		}
+
+		function drawFireworks() {
+			ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+			// 폭죽 본체
+			for (let fw of fireworks) {
+				if (fw.state === 'ascend') {
+					ctx.save();
+					ctx.beginPath();
+					ctx.arc(fw.x, fw.y, 3, 0, Math.PI*2);
+					ctx.fillStyle = fw.color;
+					ctx.shadowColor = fw.color;
+					ctx.shadowBlur = 12;
+					ctx.fill();
+					ctx.restore();
+				}
+			}
+			// 파티클
+			for (let p of particles) {
+				ctx.save();
+				ctx.globalAlpha = p.opacity;
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+				ctx.fillStyle = p.color;
+				ctx.shadowColor = p.color;
+				ctx.shadowBlur = 16;
+				ctx.fill();
+				ctx.restore();
 			}
 		}
 
-		function updateConfetti() {
-			for (let c of confettiPieces) {
-				c.x += c.vx;
-				c.y += c.vy;
-				c.vy += c.gravity;
-				c.angle += c.angularSpeed;
-				c.opacity *= 0.995;
-			}
-			// 화면 아래로 떨어진 것 제거
-			confettiPieces = confettiPieces.filter(c =>
-				c.y < confettiCanvas.height + 40 && c.opacity > 0.05
-			);
-		}
-
-		function animateConfetti() {
-			updateConfetti();
-			drawConfetti();
-			if (confettiPieces.length > 0) {
-				confettiAnimFrame = requestAnimationFrame(animateConfetti);
+		function animateFireworks() {
+			updateFireworks();
+			updateParticles();
+			drawFireworks();
+			if (fireworks.length > 0 || particles.length > 0) {
+				fireworksAnimFrame = requestAnimationFrame(animateFireworks);
 			} else {
 				confettiCanvas.style.display = 'none';
 			}
 		}
 
-		function startConfetti() {
-			resizeConfettiCanvas();
+		function startFireworks() {
+			resizeFireworksCanvas();
 			confettiCanvas.style.display = 'block';
-			confettiPieces = [];
-			if (confettiAnimFrame) cancelAnimationFrame(confettiAnimFrame);
-			// 5초간 훨씬 더 자주, 더 많이 발사
+			fireworks = [];
+			particles = [];
+			if (fireworksAnimFrame) cancelAnimationFrame(fireworksAnimFrame);
 			let interval = setInterval(() => {
-				for (let i = 0; i < 10; i++) launchConfetti();
-			}, 80);
-			animateConfetti();
-			if (confettiEndTimeout) clearTimeout(confettiEndTimeout);
-			confettiEndTimeout = setTimeout(() => {
+				for (let i = 0; i < 2; i++) launchFirework();
+			}, 320);
+			animateFireworks();
+			if (fireworksEndTimeout) clearTimeout(fireworksEndTimeout);
+			fireworksEndTimeout = setTimeout(() => {
 				clearInterval(interval);
 				setTimeout(() => {
-					confettiPieces = [];
+					fireworks = [];
+					particles = [];
 					confettiCanvas.style.display = 'none';
 				}, 1800);
-			}, 5000);
+			}, 3500);
 		}
 
 		document.getElementById('stopBtn').onclick = stopTimer;
@@ -234,10 +272,11 @@
 			document.getElementById('timer').textContent = '0.00';
 			document.getElementById('result').textContent = '';
 			document.getElementById('stopBtn').disabled = false;
-			// 컨페티 초기화
-			if (confettiAnimFrame) cancelAnimationFrame(confettiAnimFrame);
-			if (confettiEndTimeout) clearTimeout(confettiEndTimeout);
-			confettiPieces = [];
+			// 폭죽 초기화
+			if (fireworksAnimFrame) cancelAnimationFrame(fireworksAnimFrame);
+			if (fireworksEndTimeout) clearTimeout(fireworksEndTimeout);
+			fireworks = [];
+			particles = [];
 			confettiCanvas.style.display = 'none';
 			startTimer();
 		};
@@ -258,7 +297,7 @@
 				document.getElementById('stopBtn').disabled = true;
 				document.getElementById('result').textContent = '성공!';
 				document.getElementById('result').style.color = '#388e3c';
-				startConfetti();
+				startFireworks();
 			}
 		});
 
