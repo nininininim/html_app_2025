@@ -61,7 +61,7 @@
 </head>
 <body>
 	<div class="container">
-		<canvas id="fireworks" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10;display:none;"></canvas>
+		<canvas id="fireworks" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;display:none;"></canvas>
 		<div class="timer" id="timer">0.00</div>
 		<button class="stop-btn" id="stopBtn">멈추기</button>
 		<button class="stop-btn" id="retryBtn" style="margin-top:12px; background:linear-gradient(90deg,#43e97b 0%,#38f9d7 100%);">다시하기</button>
@@ -141,22 +141,26 @@
 		}
 
 		function launchFirework() {
-			const colors = ['#2196f3', '#e53935', '#43a047'];
-			const x = randomBetween(0.2, 0.8) * fwCanvas.width;
-			const y = randomBetween(0.2, 0.5) * fwCanvas.height;
+			const colors = [
+				'#2196f3', '#e53935', '#43a047', '#ffd600', '#ff6f00', '#8e24aa', '#00bcd4', '#ff4081', '#fff', '#00e676'
+			];
+			// 화면 전체에 퍼지도록 x, y 범위 확장
+			const x = randomBetween(0.05, 0.95) * fwCanvas.width;
+			const y = randomBetween(0.1, 0.7) * fwCanvas.height;
 			const color = colors[Math.floor(Math.random() * colors.length)];
 			const particles = [];
-			const count = 48 + Math.floor(Math.random() * 24);
+			const count = 80 + Math.floor(Math.random() * 60); // 파티클 수 증가
 			for (let i = 0; i < count; i++) {
 				const angle = (2 * Math.PI * i) / count;
-				const speed = randomBetween(2, 6);
+				const speed = randomBetween(4, 12); // 속도 증가
 				particles.push({
 					x, y,
 					vx: Math.cos(angle) * speed,
 					vy: Math.sin(angle) * speed,
 					alpha: 1,
 					color,
-					radius: randomBetween(2, 4)
+					radius: randomBetween(3, 8), // 반지름 증가
+					shadow: 32 + Math.random() * 32 // 그림자 효과 강화
 				});
 			}
 			fireworks.push({particles});
@@ -172,7 +176,7 @@
 					ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
 					ctx.fillStyle = p.color;
 					ctx.shadowColor = p.color;
-					ctx.shadowBlur = 12;
+					ctx.shadowBlur = p.shadow;
 					ctx.fill();
 					ctx.restore();
 				}
@@ -184,14 +188,14 @@
 				for (let p of fw.particles) {
 					p.x += p.vx;
 					p.y += p.vy;
-					p.vy += 0.06; // gravity
-					p.vx *= 0.98;
-					p.vy *= 0.98;
-					p.alpha *= 0.97;
+					p.vy += 0.08; // gravity 약간 증가
+					p.vx *= 0.97;
+					p.vy *= 0.97;
+					p.alpha *= 0.96; // 느리게 사라지게
 				}
 			}
 			fireworks = fireworks.filter(fw =>
-				fw.particles.some(p => p.alpha > 0.05)
+				fw.particles.some(p => p.alpha > 0.04)
 			);
 		}
 
@@ -210,7 +214,10 @@
 			fwCanvas.style.display = 'block';
 			fireworks = [];
 			if (fireworkInterval) clearInterval(fireworkInterval);
-			fireworkInterval = setInterval(launchFirework, 400);
+			// 더 자주, 더 많이 발사
+			fireworkInterval = setInterval(() => {
+				for (let i = 0; i < 4; i++) launchFirework();
+			}, 120); // 0.12초마다 여러개
 			animateFireworks();
 			if (fireworkEndTimeout) clearTimeout(fireworkEndTimeout);
 			fireworkEndTimeout = setTimeout(() => {
@@ -220,7 +227,7 @@
 					fireworks = [];
 					fwCanvas.style.display = 'none';
 				}, 1200);
-			}, 5000);
+			}, 5000); // 5초간 연출
 		}
 
 		document.getElementById('stopBtn').onclick = stopTimer;
