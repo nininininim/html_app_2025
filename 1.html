@@ -144,8 +144,8 @@
 		function launchFirework() {
 			const w = confettiCanvas.width;
 			const h = confettiCanvas.height;
-			const x = randomBetween(w * 0.2, w * 0.8);
-			const y = randomBetween(h * 0.15, h * 0.45);
+			const x = randomBetween(w * 0.05, w * 0.95); // 더 넓게 분포
+			const y = randomBetween(h * 0.10, h * 0.50);
 			const color = `hsl(${Math.floor(Math.random()*360)},90%,60%)`;
 			fireworks.push({
 				x: x,
@@ -154,26 +154,26 @@
 				ty: y,
 				color: color,
 				state: 'ascend',
-				vy: randomBetween(-13, -17),
-				vx: randomBetween(-1, 1),
+				vy: randomBetween(-15, -20), // 더 빠르게
+				vx: randomBetween(-2, 2),
 				particles: []
 			});
 		}
 
 		function createParticles(firework) {
-			const count = 48 + Math.floor(Math.random() * 32);
+			const count = 96 + Math.floor(Math.random() * 64); // 파티클 수 증가
 			for (let i = 0; i < count; i++) {
 				const angle = (Math.PI * 2) * (i / count);
-				const speed = randomBetween(2, 7);
+				const speed = randomBetween(3, 10); // 더 빠르게
 				particles.push({
 					x: firework.tx,
 					y: firework.ty,
-					vx: Math.cos(angle) * speed + randomBetween(-1,1),
-					vy: Math.sin(angle) * speed + randomBetween(-1,1),
-					gravity: 0.08,
+					vx: Math.cos(angle) * speed + randomBetween(-2,2),
+					vy: Math.sin(angle) * speed + randomBetween(-2,2),
+					gravity: 0.09,
 					opacity: 1,
 					color: firework.color,
-					radius: randomBetween(2, 4)
+					radius: randomBetween(2, 6) // 반경도 다양하게
 				});
 			}
 		}
@@ -251,8 +251,8 @@
 			particles = [];
 			if (fireworksAnimFrame) cancelAnimationFrame(fireworksAnimFrame);
 			let interval = setInterval(() => {
-				for (let i = 0; i < 2; i++) launchFirework();
-			}, 320);
+				for (let i = 0; i < 6; i++) launchFirework(); // 한 번에 6개씩
+			}, 180); // 더 자주 쏨
 			animateFireworks();
 			if (fireworksEndTimeout) clearTimeout(fireworksEndTimeout);
 			fireworksEndTimeout = setTimeout(() => {
@@ -261,8 +261,8 @@
 					fireworks = [];
 					particles = [];
 					confettiCanvas.style.display = 'none';
-				}, 1800);
-			}, 3500);
+				}, 2000);
+			}, 5000); // 5초간 폭죽
 		}
 
 		document.getElementById('stopBtn').onclick = stopTimer;
