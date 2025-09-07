@@ -164,7 +164,7 @@
 		}
 
 		function launchConfetti() {
-			const count = 32 + Math.floor(Math.random() * 16); // 한 번에 여러 개
+			const count = 120 + Math.floor(Math.random() * 60); // 한 번에 훨씬 더 많이
 			for (let i = 0; i < count; i++) {
 				confettiPieces.push(createConfettiPiece());
 			}
@@ -212,10 +212,10 @@
 			confettiCanvas.style.display = 'block';
 			confettiPieces = [];
 			if (confettiAnimFrame) cancelAnimationFrame(confettiAnimFrame);
-			// 5초간 여러 번 발사
+			// 5초간 훨씬 더 자주, 더 많이 발사
 			let interval = setInterval(() => {
-				for (let i = 0; i < 4; i++) launchConfetti();
-			}, 120);
+				for (let i = 0; i < 10; i++) launchConfetti();
+			}, 80);
 			animateConfetti();
 			if (confettiEndTimeout) clearTimeout(confettiEndTimeout);
 			confettiEndTimeout = setTimeout(() => {
@@ -223,7 +223,7 @@
 				setTimeout(() => {
 					confettiPieces = [];
 					confettiCanvas.style.display = 'none';
-				}, 1200);
+				}, 1800);
 			}, 5000);
 		}
 
