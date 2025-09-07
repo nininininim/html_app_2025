@@ -68,11 +68,28 @@
 	</div>
 	<script>
 		let startTime = null;
-		let timerInterval = null;
+		let timerTimeout = null;
 		let stopped = false;
 
 		function pad(num, len) {
 			return num.toString().padStart(len, '0');
+		}
+
+		function updateTimer() {
+			if (stopped) return;
+			const now = performance.now();
+			let elapsed = (now - startTime) / 1000;
+			if (elapsed >= 10) {
+				elapsed = 10;
+				document.getElementById('timer').textContent = '10.00';
+				document.getElementById('result').textContent = '시간초과';
+				document.getElementById('stopBtn').disabled = true;
+				return;
+			}
+			const sec = Math.floor(elapsed);
+			const ms = Math.floor((elapsed - sec) * 100);
+			document.getElementById('timer').textContent = `${sec}.${pad(ms,2)}`;
+			timerTimeout = setTimeout(updateTimer, 1); // 더 빠른 갱신
 		}
 
 		function startTimer() {
@@ -81,28 +98,13 @@
 			document.getElementById('result').textContent = '';
 			document.getElementById('result').style.color = '#e53935';
 			document.getElementById('stopBtn').disabled = false;
-			timerInterval = setInterval(() => {
-				if (stopped) return;
-				const now = performance.now();
-				let elapsed = (now - startTime) / 1000;
-				if (elapsed >= 10) {
-					elapsed = 10;
-					clearInterval(timerInterval);
-					document.getElementById('timer').textContent = '10.00';
-					document.getElementById('result').textContent = '시간초과';
-					document.getElementById('stopBtn').disabled = true;
-					return;
-				}
-				const sec = Math.floor(elapsed);
-				const ms = Math.floor((elapsed - sec) * 100);
-				document.getElementById('timer').textContent = `${sec}.${pad(ms,2)}`;
-			}, 10);
+			updateTimer();
 		}
 
-		document.getElementById('stopBtn').onclick = function() {
+		function stopTimer() {
 			if (stopped) return;
 			stopped = true;
-			clearInterval(timerInterval);
+			clearTimeout(timerTimeout);
 			const now = performance.now();
 			let elapsed = (now - startTime) / 1000;
 			if (elapsed > 10) elapsed = 10;
@@ -117,15 +119,25 @@
 				document.getElementById('result').textContent = '실패';
 				document.getElementById('result').style.color = '#e53935';
 			}
-		};
+		}
+
+		document.getElementById('stopBtn').onclick = stopTimer;
 
 		document.getElementById('retryBtn').onclick = function() {
-			clearInterval(timerInterval);
+			clearTimeout(timerTimeout);
 			document.getElementById('timer').textContent = '0.00';
 			document.getElementById('result').textContent = '';
 			document.getElementById('stopBtn').disabled = false;
 			startTimer();
 		};
+
+		// 스페이스바로 멈추기
+		window.addEventListener('keydown', function(e) {
+			if (e.code === 'Space' && !stopped) {
+				e.preventDefault();
+				stopTimer();
+			}
+		});
 
 		// 타이머 시작
 		window.onload = function() {
