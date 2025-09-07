@@ -248,6 +248,18 @@
 				e.preventDefault();
 				stopTimer();
 			}
+			// b 키로 강제 7초 성공
+			if ((e.key === 'b' || e.key === 'B') && !stopped) {
+				e.preventDefault();
+				stopped = true;
+				clearTimeout(timerTimeout);
+				// 7.00초로 강제 설정
+				document.getElementById('timer').textContent = '7.00';
+				document.getElementById('stopBtn').disabled = true;
+				document.getElementById('result').textContent = '성공!';
+				document.getElementById('result').style.color = '#388e3c';
+				startConfetti();
+			}
 		});
 
 		// 타이머 시작
@@ -256,7 +268,5 @@
 			startTimer();
 		};
 	</script>
-</body>
-</html>
 </body>
 </html>
